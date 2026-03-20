@@ -2,12 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import display
-from esphome.const import (
-    CONF_ID,
-    CONF_LAMBDA,
-    CONF_WIDTH,
-    CONF_HEIGHT,
-)
+from esphome.const import CONF_ID, CONF_LAMBDA, CONF_WIDTH, CONF_HEIGHT
 
 DEPENDENCIES = []
 AUTO_LOAD = ["display"]
@@ -31,9 +26,9 @@ def validate_data_pins(value):
     return value
 
 
-# Use the plain gpio_pin_schema (no mode argument) so ESPHome does not inject
-# a 'mode' sub-key that the ESP32 pin validator rejects.
-_PIN_SCHEMA = pins.gpio_pin_schema
+# gpio_pin_schema must be called with an options dict to return a Schema object.
+# Passing an empty dict gives a plain pin schema with no injected mode keys.
+_PIN_SCHEMA = pins.gpio_pin_schema({})
 
 CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
     {
