@@ -5,10 +5,8 @@ from esphome.components import display
 from esphome.const import (
     CONF_ID,
     CONF_LAMBDA,
-    CONF_PAGES,
     CONF_WIDTH,
     CONF_HEIGHT,
-    CONF_UPDATE_INTERVAL,
 )
 
 DEPENDENCIES = []
@@ -19,31 +17,36 @@ T6963Display = t6963_ns.class_(
     "T6963Display", cg.PollingComponent, display.DisplayBuffer
 )
 
-CONF_CS_PIN   = "cs_pin"
-CONF_WR_PIN   = "wr_pin"
-CONF_RD_PIN   = "rd_pin"
-CONF_CD_PIN   = "cd_pin"
-CONF_RST_PIN  = "rst_pin"
+CONF_CS_PIN    = "cs_pin"
+CONF_WR_PIN    = "wr_pin"
+CONF_RD_PIN    = "rd_pin"
+CONF_CD_PIN    = "cd_pin"
+CONF_RST_PIN   = "rst_pin"
 CONF_DATA_PINS = "data_pins"
 
-# Validate exactly 8 data pins
+
 def validate_data_pins(value):
     if len(value) != 8:
         raise cv.Invalid("Exactly 8 data pins required (DB0-DB7)")
     return value
 
+
+# Use the plain gpio_pin_schema (no mode argument) so ESPHome does not inject
+# a 'mode' sub-key that the ESP32 pin validator rejects.
+_PIN_SCHEMA = pins.gpio_pin_schema
+
 CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(T6963Display),
-        cv.Required(CONF_WIDTH):      cv.int_range(min=1, max=640),
-        cv.Required(CONF_HEIGHT):     cv.int_range(min=1, max=480),
-        cv.Required(CONF_CS_PIN):     pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_WR_PIN):     pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_RD_PIN):     pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_CD_PIN):     pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_RST_PIN):    pins.internal_gpio_output_pin_schema,
-        cv.Required(CONF_DATA_PINS):  cv.All(
-            cv.ensure_list(pins.internal_gpio_output_pin_schema),
+        cv.Required(CONF_WIDTH):  cv.int_range(min=1, max=640),
+        cv.Required(CONF_HEIGHT): cv.int_range(min=1, max=480),
+        cv.Required(CONF_CS_PIN):  _PIN_SCHEMA,
+        cv.Required(CONF_WR_PIN):  _PIN_SCHEMA,
+        cv.Required(CONF_RD_PIN):  _PIN_SCHEMA,
+        cv.Required(CONF_CD_PIN):  _PIN_SCHEMA,
+        cv.Required(CONF_RST_PIN): _PIN_SCHEMA,
+        cv.Required(CONF_DATA_PINS): cv.All(
+            cv.ensure_list(_PIN_SCHEMA),
             validate_data_pins,
         ),
     }
@@ -80,4 +83,3 @@ async def to_code(config):
             return_type=cg.void,
         )
         cg.add(var.set_writer(lambda_))
-        
