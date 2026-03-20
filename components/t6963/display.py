@@ -37,13 +37,13 @@ CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
         cv.GenerateID(): cv.declare_id(T6963Display),
         cv.Required(CONF_WIDTH):      cv.int_range(min=1, max=640),
         cv.Required(CONF_HEIGHT):     cv.int_range(min=1, max=480),
-        cv.Required(CONF_CS_PIN):     pins.gpio_output_pin_schema,
-        cv.Required(CONF_WR_PIN):     pins.gpio_output_pin_schema,
-        cv.Required(CONF_RD_PIN):     pins.gpio_output_pin_schema,
-        cv.Required(CONF_CD_PIN):     pins.gpio_output_pin_schema,
-        cv.Required(CONF_RST_PIN):    pins.gpio_output_pin_schema,
+        cv.Required(CONF_CS_PIN):     pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_WR_PIN):     pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_RD_PIN):     pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_CD_PIN):     pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_RST_PIN):    pins.internal_gpio_output_pin_schema,
         cv.Required(CONF_DATA_PINS):  cv.All(
-            cv.ensure_list(pins.gpio_pin_schema({cv.Optional("mode"): cv.one_of("OUTPUT", upper=True)})),
+            cv.ensure_list(pins.internal_gpio_output_pin_schema),
             validate_data_pins,
         ),
     }
@@ -80,3 +80,4 @@ async def to_code(config):
             return_type=cg.void,
         )
         cg.add(var.set_writer(lambda_))
+        
