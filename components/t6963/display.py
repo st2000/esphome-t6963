@@ -19,33 +19,54 @@ CONF_CD_PIN    = "cd_pin"
 CONF_RST_PIN   = "rst_pin"
 CONF_DATA_PINS = "data_pins"
 
+# A single pin entry: {number: GPIOxx, mode: {output: true}, inverted: false}
+# We define it as a plain cv.Schema so it is serialisable by yaml_util.dump().
+_PIN_SCHEMA = cv.Schema(
+    {
+        cv.Required("number"): cv.positive_int,
+        cv.Optional("inverted", default=False): cv.boolean,
+        cv.Optional("mode", default={}): cv.Schema(
+            {
+                cv.Optional("output", default=True): cv.boolean,
+                cv.Optional("input",  default=False): cv.boolean,
+            }
+        ),
+        cv.Optional("allow_other_uses", default=False): cv.boolean,
+    }
+)
 
-def validate_data_pins(value):
+
+def _pin_shorthand(value):
+    """Allow bare 'GPIO25' strings as shorthand for {number: 25}."""
+    if isinstance(value, str) and value.upper().startswith("GPIO"):
+        try:
+            num = int(value[4:])
+            return _PIN_SCHEMA({"number": num})
+        except ValueError:
+            pass
+    if isinstance(value, int):
+        return _PIN_SCHEMA({"number": value})
+    return _PIN_SCHEMA(value)
+
+
+def _data_pins_validator(value):
+    value = cv.ensure_list(_pin_shorthand)(value)
     if len(value) != 8:
         raise cv.Invalid("Exactly 8 data pins required (DB0-DB7)")
     return value
 
-
-# Use output_pin_schema (with inverted support) for control pins.
-# Use a list of output_pin_schema for data pins.
-# This matches what lcd_gpio uses internally.
-_CTRL_PIN = pins.gpio_output_pin_schema
-_DATA_PIN = pins.gpio_output_pin_schema
 
 CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(T6963Display),
         cv.Required(CONF_WIDTH):     cv.int_range(min=1, max=640),
         cv.Required(CONF_HEIGHT):    cv.int_range(min=1, max=480),
-        cv.Required(CONF_CS_PIN):    _CTRL_PIN,
-        cv.Required(CONF_WR_PIN):    _CTRL_PIN,
-        cv.Required(CONF_RD_PIN):    _CTRL_PIN,
-        cv.Required(CONF_CD_PIN):    _CTRL_PIN,
-        cv.Required(CONF_RST_PIN):   _CTRL_PIN,
-        cv.Required(CONF_DATA_PINS): cv.All(
-            cv.ensure_list(_DATA_PIN),
-            validate_data_pins,
-        ),
+        cv.Required(CONF_CS_PIN):    _pin_shorthand,
+        cv.Required(CONF_WR_PIN):    _pin_shorthand,
+        cv.Required(CONF_RD_PIN):    _pin_shorthand,
+        cv.Required(CONF_CD_PIN):    _pin_shorthand,
+        cv.Required(CONF_RST_PIN):   _pin_shorthand,
+        cv.Required(CONF_DATA_PINS): _data_pins_validator,
     }
 ).extend(cv.polling_component_schema("1s"))
 
