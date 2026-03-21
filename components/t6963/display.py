@@ -26,22 +26,24 @@ def validate_data_pins(value):
     return value
 
 
-# gpio_pin_schema must be called with an options dict to return a Schema object.
-# Passing an empty dict gives a plain pin schema with no injected mode keys.
-_PIN_SCHEMA = pins.gpio_pin_schema({})
+# Use output_pin_schema (with inverted support) for control pins.
+# Use a list of output_pin_schema for data pins.
+# This matches what lcd_gpio uses internally.
+_CTRL_PIN = pins.gpio_output_pin_schema
+_DATA_PIN = pins.gpio_output_pin_schema
 
 CONFIG_SCHEMA = display.FULL_DISPLAY_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(T6963Display),
-        cv.Required(CONF_WIDTH):  cv.int_range(min=1, max=640),
-        cv.Required(CONF_HEIGHT): cv.int_range(min=1, max=480),
-        cv.Required(CONF_CS_PIN):  _PIN_SCHEMA,
-        cv.Required(CONF_WR_PIN):  _PIN_SCHEMA,
-        cv.Required(CONF_RD_PIN):  _PIN_SCHEMA,
-        cv.Required(CONF_CD_PIN):  _PIN_SCHEMA,
-        cv.Required(CONF_RST_PIN): _PIN_SCHEMA,
+        cv.Required(CONF_WIDTH):     cv.int_range(min=1, max=640),
+        cv.Required(CONF_HEIGHT):    cv.int_range(min=1, max=480),
+        cv.Required(CONF_CS_PIN):    _CTRL_PIN,
+        cv.Required(CONF_WR_PIN):    _CTRL_PIN,
+        cv.Required(CONF_RD_PIN):    _CTRL_PIN,
+        cv.Required(CONF_CD_PIN):    _CTRL_PIN,
+        cv.Required(CONF_RST_PIN):   _CTRL_PIN,
         cv.Required(CONF_DATA_PINS): cv.All(
-            cv.ensure_list(_PIN_SCHEMA),
+            cv.ensure_list(_DATA_PIN),
             validate_data_pins,
         ),
     }
